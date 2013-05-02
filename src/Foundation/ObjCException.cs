@@ -1,6 +1,5 @@
 //
-// Copyright 2011, Novell, Inc.
-// Copyright 2012 Xamarin Inc.
+// Copyright 2013, Xamarin Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -23,43 +22,48 @@
 //
 
 using System;
-using System.Drawing;
 
-using MonoMac.Foundation;
-using MonoMac.CoreGraphics;
+namespace MonoMac.Foundation {
+	public class ObjCException : Exception {
+		NSException native_exc;
 
-namespace MonoMac.AppKit {
-
-	public partial class NSImage {
-
-		public CGImage CGImage {
-			get {
-				var rect = RectangleF.Empty;
-				return AsCGImage (ref rect, null, null);
-			}
-		}
-
-		public static NSImage FromStream (System.IO.Stream stream)
+		public ObjCException () : base ()
 		{
-			using (NSData data = NSData.FromStream (stream)) {
-				return new NSImage (data);
+			native_exc = new NSException ("default", String.Empty, null);
+		}
+
+		public ObjCException (NSException exc) : base ()
+		{
+			native_exc = exc;
+		}
+
+		[Preserve]
+		internal static void Throw (IntPtr handle)
+		{
+			throw new ObjCException (new NSException (handle));
+		}
+
+		public NSException NSException {
+			get {
+				return native_exc;
 			}
 		}
 
-		// note: if needed override the protected Get|Set methods
-		public string Name { 
-			get { return GetName (); }
-			// ignore return value (bool)
-			set { SetName (value); }
-		}
-	}
-
-	public partial class NSImageRep {
-
-		public CGImage CGImage {
+		public string Reason {
 			get {
-				var rect = RectangleF.Empty;
-				return AsCGImage (ref rect, null, null);
+				return native_exc.Reason;
+			}
+		}
+
+		public string Name {
+			get {
+				return native_exc.Name;
+			}
+		}
+
+		public override string Message {
+			get {
+				return string.Format ("{0}: {1}", Name, Reason);
 			}
 		}
 	}
